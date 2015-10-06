@@ -3,31 +3,32 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Resources;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Entity;
-using Microsoft.Data.Entity.Update;
+using Microsoft.AspNet.Identity.EntityFramework6;
 
-namespace Microsoft.AspNet.Identity.EntityFramework
+namespace Microsoft.AspNet.Identity.EntityFramework6
 {
-    public class UserStore : UserStore<IdentityUser<string>>
+    public class UserStore : UserStore<IdentityUser>
     {
         public UserStore(DbContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
     }
 
     public class UserStore<TUser> : UserStore<TUser, IdentityRole, DbContext>
-        where TUser : IdentityUser<string>, new()
+        where TUser : IdentityUser, new()
     {
         public UserStore(DbContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
     }
 
     public class UserStore<TUser, TRole, TContext> : UserStore<TUser, TRole, TContext, string>
-        where TUser : IdentityUser<string>, new()
-        where TRole : IdentityRole<string>, new()
+        where TUser : IdentityUser, new()
+        where TRole : IdentityRole, new()
         where TContext : DbContext
     {
         public UserStore(TContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
@@ -44,8 +45,8 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         IUserPhoneNumberStore<TUser>,
         IQueryableUserStore<TUser>,
         IUserTwoFactorStore<TUser>
-        where TUser : IdentityUser<TKey>
-        where TRole : IdentityRole<TKey>
+        where TUser : IdentityUser
+        where TRole : IdentityRole
         where TContext : DbContext
         where TKey : IEquatable<TKey>
     {
@@ -85,9 +86,9 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
-            return Task.FromResult(ConvertIdToString(user.Id));
+            return Task.FromResult(user.Id);
         }
 
         public virtual Task<string> GetUserNameAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
@@ -96,7 +97,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.UserName);
         }
@@ -107,7 +108,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.UserName = userName;
             return Task.FromResult(0);
@@ -119,7 +120,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.NormalizedUserName);
         }
@@ -130,7 +131,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.NormalizedUserName = normalizedName;
             return Task.FromResult(0);
@@ -142,9 +143,9 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
-            Context.Add(user);
+            Context.Set<TUser>().Add(user);
             await SaveChanges(cancellationToken);
             return IdentityResult.Success;
         }
@@ -155,12 +156,11 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
 
-            Context.Attach(user);
+            Context.Set<TUser>().Attach(user);
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            Context.Update(user);
             try
             {
                 await SaveChanges(cancellationToken);
@@ -178,10 +178,10 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
 
-            Context.Remove(user);
+            Context.Set<TUser>().Remove(user);
             try
             {
                 await SaveChanges(cancellationToken);
@@ -203,26 +203,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            var id = ConvertIdFromString(userId);
-            return Users.FirstOrDefaultAsync(u => u.Id.Equals(id), cancellationToken);
-        }
-
-        public virtual TKey ConvertIdFromString(string id)
-        {
-            if (id == null)
-            {
-                return default(TKey);
-            }
-            return (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(id);
-        }
-
-        public virtual string ConvertIdToString(TKey id)
-        {
-            if (id.Equals(default(TKey)))
-            {
-                return null;
-            }
-            return id.ToString();
+            return Users.FirstOrDefaultAsync(u => u.Id.Equals(userId), cancellationToken);
         }
 
         /// <summary>
@@ -256,7 +237,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.PasswordHash = passwordHash;
             return Task.FromResult(0);
@@ -274,7 +255,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.PasswordHash);
         }
@@ -304,18 +285,18 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             if (String.IsNullOrWhiteSpace(roleName))
             {
-                throw new ArgumentException(Resources.ValueCannotBeNullOrEmpty, "roleName");
+                throw new ArgumentException(Resources.ValueCannotBeNullOrEmpty, nameof(roleName));
             }
             var roleEntity = await Roles.SingleOrDefaultAsync(r => r.Name.ToUpper() == roleName.ToUpper(), cancellationToken);
             if (roleEntity == null)
             {
                 throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, Resources.RoleNotFound, roleName));
             }
-            var ur = new IdentityUserRole<TKey> { UserId = user.Id, RoleId = roleEntity.Id };
+            var ur = new IdentityUserRole { UserId = user.Id, RoleId = roleEntity.Id };
             UserRoles.Add(ur);
         }
 
@@ -332,11 +313,11 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             if (String.IsNullOrWhiteSpace(roleName))
             {
-                throw new ArgumentException(Resources.ValueCannotBeNullOrEmpty, "roleName");
+                throw new ArgumentException(Resources.ValueCannotBeNullOrEmpty, nameof(roleName));
             }
             var roleEntity = await Roles.SingleOrDefaultAsync(r => r.Name.ToUpper() == roleName.ToUpper(), cancellationToken);
             if (roleEntity != null)
@@ -361,7 +342,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             var userId = user.Id;
             var query = from userRole in UserRoles
@@ -384,11 +365,11 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             if (string.IsNullOrWhiteSpace(roleName))
             {
-                throw new ArgumentException(Resources.ValueCannotBeNullOrEmpty, "roleName");
+                throw new ArgumentException(Resources.ValueCannotBeNullOrEmpty, nameof(roleName));
             }
             var role = await Roles.SingleOrDefaultAsync(r => r.Name.ToUpper() == roleName.ToUpper(), cancellationToken);
             if (role != null)
@@ -417,16 +398,16 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         }
 
         private DbSet<TRole> Roles { get { return Context.Set<TRole>(); } }
-        private DbSet<IdentityUserClaim<TKey>> UserClaims { get { return Context.Set<IdentityUserClaim<TKey>>(); } }
-        private DbSet<IdentityUserRole<TKey>> UserRoles { get { return Context.Set<IdentityUserRole<TKey>>(); } }
-        private DbSet<IdentityUserLogin<TKey>> UserLogins { get { return Context.Set<IdentityUserLogin<TKey>>(); } }
+        private DbSet<IdentityUserClaim> UserClaims { get { return Context.Set<IdentityUserClaim>(); } }
+        private DbSet<IdentityUserRole> UserRoles { get { return Context.Set<IdentityUserRole>(); } }
+        private DbSet<IdentityUserLogin> UserLogins { get { return Context.Set<IdentityUserLogin>(); } }
 
         public async virtual Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
         {
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
 
             return await UserClaims.Where(uc => uc.UserId.Equals(user.Id)).Select(c => new Claim(c.ClaimType, c.ClaimValue)).ToListAsync(cancellationToken);
@@ -437,15 +418,15 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             if (claims == null)
             {
-                throw new ArgumentNullException("claims");
+                throw new ArgumentNullException(nameof(claims));
             }
             foreach (var claim in claims)
             {
-                UserClaims.Add(new IdentityUserClaim<TKey> { UserId = user.Id, ClaimType = claim.Type, ClaimValue = claim.Value });
+                UserClaims.Add(new IdentityUserClaim { UserId = user.Id, ClaimType = claim.Type, ClaimValue = claim.Value });
             }
             return Task.FromResult(false);
         }
@@ -455,15 +436,15 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             if (claim == null)
             {
-                throw new ArgumentNullException("claim");
+                throw new ArgumentNullException(nameof(claim));
             }
             if (newClaim == null)
             {
-                throw new ArgumentNullException("newClaim");
+                throw new ArgumentNullException(nameof(newClaim));
             }
 
             var matchedClaims = await UserClaims.Where(uc => uc.UserId.Equals(user.Id) && uc.ClaimValue == claim.Value && uc.ClaimType == claim.Type).ToListAsync(cancellationToken);
@@ -479,11 +460,11 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             if (claims == null)
             {
-                throw new ArgumentNullException("claims");
+                throw new ArgumentNullException(nameof(claims));
             }
             foreach (var claim in claims)
             {
@@ -502,13 +483,13 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             if (login == null)
             {
-                throw new ArgumentNullException("login");
+                throw new ArgumentNullException(nameof(login));
             }
-            var l = new IdentityUserLogin<TKey>
+            var l = new IdentityUserLogin
             {
                 UserId = user.Id,
                 ProviderKey = login.ProviderKey,
@@ -527,7 +508,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             var userId = user.Id;
             var entry = await UserLogins.SingleOrDefaultAsync(l => l.UserId.Equals(userId) && l.LoginProvider == loginProvider && l.ProviderKey == providerKey, cancellationToken);
@@ -543,7 +524,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             var userId = user.Id;
             return await UserLogins.Where(l => l.UserId.Equals(userId))
@@ -576,7 +557,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.EmailConfirmed);
         }
@@ -594,7 +575,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.EmailConfirmed = confirmed;
             return Task.FromResult(0);
@@ -613,7 +594,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.Email = email;
             return Task.FromResult(0);
@@ -631,7 +612,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.Email);
         }
@@ -642,7 +623,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.NormalizedEmail);
         }
@@ -653,7 +634,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.NormalizedEmail = normalizedEmail;
             return Task.FromResult(0);
@@ -685,7 +666,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.LockoutEnd);
         }
@@ -703,7 +684,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.LockoutEnd = lockoutEnd;
             return Task.FromResult(0);
@@ -721,7 +702,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.AccessFailedCount++;
             return Task.FromResult(user.AccessFailedCount);
@@ -739,7 +720,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.AccessFailedCount = 0;
             return Task.FromResult(0);
@@ -758,7 +739,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.AccessFailedCount);
         }
@@ -775,7 +756,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.LockoutEnabled);
         }
@@ -793,7 +774,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.LockoutEnabled = enabled;
             return Task.FromResult(0);
@@ -812,7 +793,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.PhoneNumber = phoneNumber;
             return Task.FromResult(0);
@@ -830,7 +811,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.PhoneNumber);
         }
@@ -847,7 +828,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.PhoneNumberConfirmed);
         }
@@ -865,7 +846,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.PhoneNumberConfirmed = confirmed;
             return Task.FromResult(0);
@@ -884,7 +865,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.SecurityStamp = stamp;
             return Task.FromResult(0);
@@ -902,7 +883,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.SecurityStamp);
         }
@@ -920,7 +901,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             user.TwoFactorEnabled = enabled;
             return Task.FromResult(0);
@@ -938,7 +919,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (user == null)
             {
-                throw new ArgumentNullException("user");
+                throw new ArgumentNullException(nameof(user));
             }
             return Task.FromResult(user.TwoFactorEnabled);
         }
@@ -955,7 +936,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (claim == null)
             {
-                throw new ArgumentNullException("claim");
+                throw new ArgumentNullException(nameof(claim));
             }
 
             var query = from userclaims in UserClaims
@@ -979,7 +960,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (String.IsNullOrEmpty(roleName))
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(roleName));
             }
 
             var role = await Roles.Where(x => x.Name.Equals(roleName)).FirstOrDefaultAsync(cancellationToken);

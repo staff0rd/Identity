@@ -3,13 +3,12 @@
 
 using System;
 
-namespace Microsoft.AspNet.Identity.EntityFramework
+namespace Microsoft.AspNet.Identity.EntityFramework6
 {
     /// <summary>
     ///     EntityType that represents one specific user claim
     /// </summary>
-    /// <typeparam name="TKey"></typeparam>
-    public class IdentityUserClaim<TKey> where TKey : IEquatable<TKey>
+    public class IdentityUserClaim
     {
         /// <summary>
         ///     Primary key
@@ -19,7 +18,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         /// <summary>
         ///     User Id for the user who owns this claim
         /// </summary>
-        public virtual TKey UserId { get; set; }
+        public virtual string UserId { get; set; }
 
         /// <summary>
         ///     Claim type

@@ -3,13 +3,12 @@
 
 using System;
 
-namespace Microsoft.AspNet.Identity.EntityFramework
+namespace Microsoft.AspNet.Identity.EntityFramework6
 {
     /// <summary>
     ///     EntityType that represents one specific role claim
     /// </summary>
-    /// <typeparam name="TKey"></typeparam>
-    public class IdentityRoleClaim<TKey> where TKey : IEquatable<TKey>
+    public class IdentityRoleClaim
     {
         /// <summary>
         ///     Primary key
@@ -19,7 +18,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         /// <summary>
         ///     User Id for the role this claim belongs to
         /// </summary>
-        public virtual TKey RoleId { get; set; }
+        public virtual string RoleId { get; set; }
 
         /// <summary>
         ///     Claim type

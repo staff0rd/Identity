@@ -4,23 +4,23 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Entity;
-using Microsoft.Data.Entity.Update;
 
-namespace Microsoft.AspNet.Identity.EntityFramework
+namespace Microsoft.AspNet.Identity.EntityFramework6
 {
     public class RoleStore<TRole> : RoleStore<TRole, DbContext, string>
-        where TRole : IdentityRole<string>
+        where TRole : IdentityRole
     {
         public RoleStore(DbContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
     }
 
     public class RoleStore<TRole, TContext> : RoleStore<TRole, TContext, string>
-        where TRole : IdentityRole<string>
+        where TRole : IdentityRole
         where TContext : DbContext
     {
         public RoleStore(TContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
@@ -29,7 +29,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
     public class RoleStore<TRole, TContext, TKey> :
         IQueryableRoleStore<TRole>,
         IRoleClaimStore<TRole>
-        where TRole : IdentityRole<TKey>
+        where TRole : IdentityRole
         where TKey : IEquatable<TKey>
         where TContext : DbContext
     {
@@ -72,9 +72,9 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
-            Context.Add(role);
+            Context.Set<TRole>().Add(role);
             await SaveChanges(cancellationToken);
             return IdentityResult.Success;
         }
@@ -85,11 +85,10 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
-            Context.Attach(role);
+            Context.Set<TRole>().Attach(role);
             role.ConcurrencyStamp = Guid.NewGuid().ToString();
-            Context.Update(role);
             try
             {
                 await SaveChanges(cancellationToken);
@@ -107,9 +106,9 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
-            Context.Remove(role);
+            Context.Set<TRole>().Remove(role);
             try
             {
                 await SaveChanges(cancellationToken);
@@ -127,9 +126,9 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
-            return Task.FromResult(ConvertIdToString(role.Id));
+            return Task.FromResult(role.Id);
         }
 
         public Task<string> GetRoleNameAsync(TRole role, CancellationToken cancellationToken = default(CancellationToken))
@@ -138,7 +137,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
             return Task.FromResult(role.Name);
         }
@@ -149,7 +148,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
             role.Name = roleName;
             return Task.FromResult(0);
@@ -244,7 +243,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
 
             return await RoleClaims.Where(rc => rc.RoleId.Equals(role.Id)).Select(c => new Claim(c.ClaimType, c.ClaimValue)).ToListAsync(cancellationToken);
@@ -255,14 +254,14 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
             if (claim == null)
             {
-                throw new ArgumentNullException("claim");
+                throw new ArgumentNullException(nameof(claim));
             }
 
-            RoleClaims.Add(new IdentityRoleClaim<TKey> { RoleId = role.Id, ClaimType = claim.Type, ClaimValue = claim.Value });
+            RoleClaims.Add(new IdentityRoleClaim { RoleId = role.Id, ClaimType = claim.Type, ClaimValue = claim.Value });
 
             return Task.FromResult(false);
         }
@@ -272,11 +271,11 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             ThrowIfDisposed();
             if (role == null)
             {
-                throw new ArgumentNullException("role");
+                throw new ArgumentNullException(nameof(role));
             }
             if (claim == null)
             {
-                throw new ArgumentNullException("claim");
+                throw new ArgumentNullException(nameof(claim));
             }
             var claims = await RoleClaims.Where(rc => rc.RoleId.Equals(role.Id) && rc.ClaimValue == claim.Value && rc.ClaimType == claim.Type).ToListAsync(cancellationToken);
             foreach (var c in claims)
@@ -290,6 +289,6 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             get { return Context.Set<TRole>(); }
         }
 
-        private DbSet<IdentityRoleClaim<TKey>> RoleClaims { get { return Context.Set<IdentityRoleClaim<TKey>>(); } }
+        private DbSet<IdentityRoleClaim> RoleClaims { get { return Context.Set<IdentityRoleClaim>(); } }
     }
 }
