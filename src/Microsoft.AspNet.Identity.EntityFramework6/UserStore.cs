@@ -3,31 +3,32 @@
 
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
+using System.Resources;
+using System.Data.Entity;
+using System.Data.Entity.Infrastructure;
 using System.Globalization;
 using System.Linq;
 using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Data.Entity;
-using Microsoft.Data.Entity.Update;
+using Microsoft.AspNet.Identity.EntityFramework6;
 
-namespace Microsoft.AspNet.Identity.EntityFramework
+namespace Microsoft.AspNet.Identity.EntityFramework6
 {
-    public class UserStore : UserStore<IdentityUser<string>>
+    public class UserStore : UserStore<IdentityUser>
     {
         public UserStore(DbContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
     }
 
     public class UserStore<TUser> : UserStore<TUser, IdentityRole, DbContext>
-        where TUser : IdentityUser<string>, new()
+        where TUser : IdentityUser, new()
     {
         public UserStore(DbContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
     }
 
     public class UserStore<TUser, TRole, TContext> : UserStore<TUser, TRole, TContext, string>
-        where TUser : IdentityUser<string>, new()
-        where TRole : IdentityRole<string>, new()
+        where TUser : IdentityUser, new()
+        where TRole : IdentityRole, new()
         where TContext : DbContext
     {
         public UserStore(TContext context, IdentityErrorDescriber describer = null) : base(context, describer) { }
@@ -44,8 +45,8 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         IUserPhoneNumberStore<TUser>,
         IQueryableUserStore<TUser>,
         IUserTwoFactorStore<TUser>
-        where TUser : IdentityUser<TKey>
-        where TRole : IdentityRole<TKey>
+        where TUser : IdentityUser
+        where TRole : IdentityRole
         where TContext : DbContext
         where TKey : IEquatable<TKey>
     {
@@ -87,7 +88,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             {
                 throw new ArgumentNullException(nameof(user));
             }
-            return Task.FromResult(ConvertIdToString(user.Id));
+            return Task.FromResult(user.Id);
         }
 
         public virtual Task<string> GetUserNameAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
@@ -144,7 +145,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             {
                 throw new ArgumentNullException(nameof(user));
             }
-            Context.Add(user);
+            Context.Set<TUser>().Add(user);
             await SaveChanges(cancellationToken);
             return IdentityResult.Success;
         }
@@ -158,9 +159,8 @@ namespace Microsoft.AspNet.Identity.EntityFramework
                 throw new ArgumentNullException(nameof(user));
             }
 
-            Context.Attach(user);
+            Context.Set<TUser>().Attach(user);
             user.ConcurrencyStamp = Guid.NewGuid().ToString();
-            Context.Update(user);
             try
             {
                 await SaveChanges(cancellationToken);
@@ -181,7 +181,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
                 throw new ArgumentNullException(nameof(user));
             }
 
-            Context.Remove(user);
+            Context.Set<TUser>().Remove(user);
             try
             {
                 await SaveChanges(cancellationToken);
@@ -203,26 +203,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfDisposed();
-            var id = ConvertIdFromString(userId);
-            return Users.FirstOrDefaultAsync(u => u.Id.Equals(id), cancellationToken);
-        }
-
-        public virtual TKey ConvertIdFromString(string id)
-        {
-            if (id == null)
-            {
-                return default(TKey);
-            }
-            return (TKey)TypeDescriptor.GetConverter(typeof(TKey)).ConvertFromInvariantString(id);
-        }
-
-        public virtual string ConvertIdToString(TKey id)
-        {
-            if (id.Equals(default(TKey)))
-            {
-                return null;
-            }
-            return id.ToString();
+            return Users.FirstOrDefaultAsync(u => u.Id.Equals(userId), cancellationToken);
         }
 
         /// <summary>
@@ -315,7 +296,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             {
                 throw new InvalidOperationException(String.Format(CultureInfo.CurrentCulture, Resources.RoleNotFound, roleName));
             }
-            var ur = new IdentityUserRole<TKey> { UserId = user.Id, RoleId = roleEntity.Id };
+            var ur = new IdentityUserRole { UserId = user.Id, RoleId = roleEntity.Id };
             UserRoles.Add(ur);
         }
 
@@ -417,9 +398,9 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         }
 
         private DbSet<TRole> Roles { get { return Context.Set<TRole>(); } }
-        private DbSet<IdentityUserClaim<TKey>> UserClaims { get { return Context.Set<IdentityUserClaim<TKey>>(); } }
-        private DbSet<IdentityUserRole<TKey>> UserRoles { get { return Context.Set<IdentityUserRole<TKey>>(); } }
-        private DbSet<IdentityUserLogin<TKey>> UserLogins { get { return Context.Set<IdentityUserLogin<TKey>>(); } }
+        private DbSet<IdentityUserClaim> UserClaims { get { return Context.Set<IdentityUserClaim>(); } }
+        private DbSet<IdentityUserRole> UserRoles { get { return Context.Set<IdentityUserRole>(); } }
+        private DbSet<IdentityUserLogin> UserLogins { get { return Context.Set<IdentityUserLogin>(); } }
 
         public async virtual Task<IList<Claim>> GetClaimsAsync(TUser user, CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -445,7 +426,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             }
             foreach (var claim in claims)
             {
-                UserClaims.Add(new IdentityUserClaim<TKey> { UserId = user.Id, ClaimType = claim.Type, ClaimValue = claim.Value });
+                UserClaims.Add(new IdentityUserClaim { UserId = user.Id, ClaimType = claim.Type, ClaimValue = claim.Value });
             }
             return Task.FromResult(false);
         }
@@ -508,7 +489,7 @@ namespace Microsoft.AspNet.Identity.EntityFramework
             {
                 throw new ArgumentNullException(nameof(login));
             }
-            var l = new IdentityUserLogin<TKey>
+            var l = new IdentityUserLogin
             {
                 UserId = user.Id,
                 ProviderKey = login.ProviderKey,

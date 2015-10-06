@@ -3,8 +3,8 @@
 
 using System;
 using Microsoft.AspNet.Identity;
-using Microsoft.Data.Entity;
-using Microsoft.Extensions.DependencyInjection.Extensions;
+using System.Data.Entity;
+using Microsoft.Framework.DependencyInjection.Extensions;
 
 namespace Microsoft.Extensions.DependencyInjection
 {

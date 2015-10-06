@@ -4,9 +4,9 @@
 using System;
 using System.Collections.Generic;
 
-namespace Microsoft.AspNet.Identity.EntityFramework
+namespace Microsoft.AspNet.Identity.EntityFramework6
 {
-    public class IdentityUser : IdentityUser<string>
+    public class IdentityUser
     {
         public IdentityUser()
         {
@@ -17,18 +17,8 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         {
             UserName = userName;
         }
-    }
 
-    public class IdentityUser<TKey> where TKey : IEquatable<TKey>
-    {
-        public IdentityUser() { }
-
-        public IdentityUser(string userName) : this()
-        {
-            UserName = userName;
-        }
-
-        public virtual TKey Id { get; set; }
+        public virtual string Id { get; set; }
         public virtual string UserName { get; set; }
         public virtual string NormalizedUserName { get; set; }
 
@@ -92,17 +82,17 @@ namespace Microsoft.AspNet.Identity.EntityFramework
         /// <summary>
         ///     Navigation property for users in the role
         /// </summary>
-        public virtual ICollection<IdentityUserRole<TKey>> Roles { get; } = new List<IdentityUserRole<TKey>>();
+        public virtual ICollection<IdentityUserRole> Roles { get; } = new List<IdentityUserRole>();
 
         /// <summary>
         ///     Navigation property for users claims
         /// </summary>
-        public virtual ICollection<IdentityUserClaim<TKey>> Claims { get; } = new List<IdentityUserClaim<TKey>>();
+        public virtual ICollection<IdentityUserClaim> Claims { get; } = new List<IdentityUserClaim>();
 
         /// <summary>
         ///     Navigation property for users logins
         /// </summary>
-        public virtual ICollection<IdentityUserLogin<TKey>> Logins { get; } = new List<IdentityUserLogin<TKey>>();
+        public virtual ICollection<IdentityUserLogin> Logins { get; } = new List<IdentityUserLogin>();
 
         /// <summary>
         /// Returns a friendly name
